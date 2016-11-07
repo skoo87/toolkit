@@ -1,0 +1,22 @@
+#!/bin/bash
+# mkrootfs name appfs
+
+tinybox="/var/run/tinybox"
+basefs="/var/lib/docker/overlay/eca972f29a3c957add2a96d2c06de12a08bf6dafc9ecbd87ae0957c587b8d610/root"
+
+container_name=$1
+appfs=$2
+
+upper=${tinybox}/${container_name}/overlay/upper
+work=${tinybox}/${container_name}/overlay/work
+root=${tinybox}/${container_name}/overlay/root
+
+mkdir -p ${upper}
+mkdir -p ${work}
+mkdir -p ${root}
+
+cp -rf ${appfs}/* ${upper}/
+
+mount -t overlay -o lowerdir=${basefs},upperdir=${upper},workdir=${work} overlay ${root}
+
+echo "rootfs=> ${root}"
