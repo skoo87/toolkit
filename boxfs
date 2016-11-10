@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# boxfs install   path.tgz
+# boxfs uninstall name
+# boxfs root      app base
+# boxfs unroot    app
+
+opt=$1
+
+tinybox_home="$TINYBOX_HOME"
+if [ "$tinybox_home" = "" ]; then
+    echo "Not found TINYBOX_HOME env"
+    exit 1
+fi
+
+image_dir="${tinybox_home}/overlay"
+
+if [ ! -d $image_dir ]; then
+    mkdir -p $image_dir
+fi
+
+case $opt in
+    help)
+        echo "Usage:"
+        echo "    boxfs install   path.tgz"
+        echo "    boxfs uninstall name"
+        echo "    boxfs root      app base"
+        echo "    boxfs unroot    app"
+    ;;
+    install)
+        name=$2
+        if [ "$name" = "" ]; then
+            echo "Install invalid option"
+            exit 1
+        fi
+        echo "Install ${name} ..."
+
+        cp -f ${name} ${image_dir}
+        cd ${image_dir}
+        tar zxf ${name}
+        rm -f "./$(basename ${name})"
+        cd -
+    ;;
+    uninstall)
+        name=$2
+        if [ "$name" = "" ]; then
+            echo "Uninstall invalid option"
+            exit 1
+        fi
+        echo "Uninstall ${name} ..."
+        
+        if [ -d "${image_dir}/${name}" ]; then
+            rm -rf "${image_dir}/${name}"
+        fi
+    ;;
+    root)
+        app=$2
+        base=$3
+
+        if [ "$app" = "" ] || [ "$base" = "" ]; then
+            echo "Root invalid option"
+            exit 1
+        fi
+
+        lower="${image_dir}/${base}"
+        upper="${image_dir}/${app}"
+        work="${image_dir}/${app}.work"
+        root="${image_dir}/${app}.root"
+
+        mkdir -p $work
+        mkdir -p $root
+
+        mount -t overlay -o lowerdir=${lower},upperdir=${upper},workdir=${work} overlay ${root}
+
+        echo "rootfs: $root"
+    ;;
+    unroot)
+        app=$2
+
+        if [ "$app" = "" ]; then
+            echo "Unroot invalid option"
+            exit 1
+        fi
+
+        root="${image_dir}/${app}.root"
+        umount $root
+    ;;
+    *)
+        ls -lh $image_dir
+    ;;
+esac
